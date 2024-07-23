@@ -6,11 +6,15 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="echo-rpc-core" />
         <module name="example-provider" />
         <module name="example-consumer" />
         <module name="example-common" />
         <module name="echo-rpc-easy" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="echo-rpc-easy (1)" target="17" />
+    </bytecodeTargetLevel>
   </component>
 </project>

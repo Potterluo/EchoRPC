@@ -10,7 +10,7 @@
     <dependencies>
         <dependency>
             <groupId>com.keriko</groupId>
-            <artifactId>echo-rpc-easy</artifactId>
+            <artifactId>echo-rpc-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>

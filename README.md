@@ -2,13 +2,21 @@
 
 基于 Java + Etcd + Vert.x 的高性能RPC框架
 
+- [x] 基础RPC功能
+- [ ] 全局配置加载（properties √ & yaml ×）
+- [ ] 接口Mock
+- [ ] 自定义序列化器
+- [ ] 自定义协议实现（基于TCP）
+- [ ] 注册中心实现
+- [ ] 负载均衡机制
+- [ ] 重试机制
+- [ ] 容错机制
+
 # 1 概述
 
 ## 什么是RPC框架？
 
 **RPC** （Remote Procedure Call，远程过程调用）框架是一种软件框架，允许程序在不同的地址空间（例如，在不同的机器上）执行彼此的方法或函数，仿佛它们是本地调用的一部分。RPC框架旨在简化分布式计算，使开发者可以更方便地构建和使用跨网络的服务。
-
-
 
 **RPC调用示例**
 
@@ -65,6 +73,32 @@ interface OrderService {
 
 - 基于JSON格式的RPC协议。
 - 通常通过HTTP或WebSocket进行通信，较为轻量和易于集成。
+
+
+
+## RPC和HTTP有什么区别？
+
+- 协议不同: HTTP 是一种应用层协议，用于传输超文本文档。RPC 是一种允许程序调用另一个地址空间（通常是在远程系统上）的过程或函数的协议。
+
+- 格式不同: HTTP 消息通常是文本格式的，可以包含 HTML、JSON、XML 等多种格式的数据。RPC 消息通常是二进制格式的。
+
+- 目的不同: HTTP 通常用于 Web 浏览器和 Web 服务器之间的通信。RPC 通常用于分布式系统中的进程间通信。
+
+- 效率不同: HTTP 通信的开销比 RPC 大，因为 HTTP 消息包含很多额外的头信息。RPC 通常更高效，因为它使用二进制格式的消息。
+
+注意: 在实践中，HTTP 和 RPC 通常可以互相转换。例如，可以使用 HTTP 作为 RPC 的传输层协议。例如，gRPC 是一个 RPC 框架，它使用 HTTP/2 作为传输层协议。
+
+## OpenFeign？
+
+OpenFeign是Spring Cloud的一个组件，主要用于简化微服务之间的HTTP调用。它是一个声明式的Web服务客户端，能够让编写Web服务客户端更加简单。OpenFeign直接可以根据服务名称从注册中心获取指定的服务IP集合，并提供了接口和注解方式进行调用。它内嵌集成了Ribbon负载均衡器，支持Spring MVC的注解，如@RequestMapping等。
+
+与Feign相比，OpenFeign是Spring Cloud自己研发的，并在Feign的基础上增加了对Spring MVC注解的支持。Feign是Netflix公司开发的轻量级RESTful HTTP服务客户端，但不支持Spring MVC的注解。
+
+##  Dubbo vs OpenFeign
+
+Dubbo是一种基于RPC的分布式服务框架。它支持高性能的服务注册发现和远程通信。通常情况下，Dubbo适用于需要高性能、高可靠性和复杂服务治理的场景。它提供了丰富的功能，比如说负载均衡、超时处理、熔断降级等等。适用于复杂的微服务体系架构。适用于**需要更高性能、可靠性和高级功能**
+
+OpenFeign是一个声明式的HTTP客户端。它简化了基于HTTP的远程通信过程。OpenFeign适用于简单的微服务场景，特别是当你的微服务之间使用HTTP通信，并且希望通过接口来定义客户端调用的时候。OpenFeign是一个很好的选择，它可以把HTTP请求转换成Java接口方法调用，提供了方便的开发体验。适用于**需求相对简单，希望提高开发效率**
 
 # 2 简易RPC 框架的实现思路
 
@@ -201,14 +235,12 @@ EchoRPC 简易版框架
 - **动态代理：** 
   动态代理的作用是，根据要生成的对象的类型，自动生成一个代理对象，常用的动态代理实现方式有 JDK动态代理和基于字节码生成的动态代理(比如CGLIB)。前者简单易用、无需引入额外的库，但缺点是只能对接口进行代理;后者更灵活、可以对任何类进行代理，但性能略低于JDK动态代理。此处使用 JDK 动态代理。
 
-  
-
   逻辑：通过⼯⼚模式，填⼊要获取的类的代理，例如
 
   ```java
    UserService userService = ServiceProxyFactory.getProxy(UserService.class);
   ```
-
+  
   ```java
    public static <T> T getProxy(Class<T> serviceClass) {   
   // 使用Proxy.newProxyInstance创建代理实例，其中传入的服务类加载器、实现的接口列表和服务代理实例。
@@ -218,7 +250,7 @@ EchoRPC 简易版框架
                   new ServiceProxy());
       }
   ```
-
+  
   
 
   至此，一个简易的RPC框架就完成了。
@@ -229,3 +261,44 @@ EchoRPC 简易版框架
 
   
 
+# 3 EchoRPC 功能实现
+
+RPC框架运行时，会设计注入服务地址，端口号等信息，在简易版项目中，是在程序里面写死，不利于维护。需要通过引入全局配置文件来自定义配置。
+
+**基础配置项** 
+
+- name 名称
+- version 版本
+- servverHost 服务器主机名
+
+**加载properties配置**
+
+```java
+    public static <T> T loadConfig(Class<T> tClass, String prefix, String environment) {
+        StringBuilder configFileBuilder = new StringBuilder("application");
+        if (StrUtil.isNotBlank(environment)) {
+            //区分不同环境的配置
+            configFileBuilder.append("-").append(environment);
+        }
+        configFileBuilder.append(".properties");
+        Props props = new Props(configFileBuilder.toString());
+        return props.toBean(tClass, prefix);
+    }
+```
+
+**加载yaml配置 （暂时搁置）** 
+
+- 问题一：判断存在哪些文件 `resourceExists(ymlFile)`
+
+  会读取出不在 `resources/` 目录下的文件
+
+  ```bash
+  Thread.currentThread().getContextClassLoader().getResource(resource)
+  
+  file:/C:/Users/Administrator/.config/.cool-request/request/lib/spring-invoke-starter.jar!/application.properties
+  ```
+
+​		（把`resourceExists(propertiesFile)`暂时放后面 bushi
+
+- yaml-->map-->bean    依赖snakeyaml
+- yaml -->properties
