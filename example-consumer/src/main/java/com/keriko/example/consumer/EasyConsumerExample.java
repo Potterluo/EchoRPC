@@ -14,19 +14,21 @@ public class EasyConsumerExample {
     public static void main(String[] args) {
         // 静态代理
 //        UserService userService = new UserServiceProxy();
-        // 动态代理
-//        UserService userService = ServiceProxyFactory.getProxy(UserService.class);
-//        User user = new User();
-//        user.setName("Consumer");
-//        // 调用
-//        User newUser = userService.getUser(user);
-//        if (newUser != null) {
-//            System.out.println("这里是Consumer，接收到getUser的返回值"+newUser.getName());
-//        } else {
-//            System.out.println("user == null");
-//        }
-        RpcConfig rpcConfig = ConfigUtils.loadConfig(RpcConfig.class, "rpc");
-        System.out.println(rpcConfig);
+        //动态代理
+//        RpcConfig rpcConfig = ConfigUtils.loadConfig(RpcConfig.class, "rpc");
+//        System.out.println(rpcConfig);
+        UserService userService = ServiceProxyFactory.getProxy(UserService.class);
+        User user = new User();
+        user.setName("Consumer");
+        // 调用
+        User newUser = userService.getUser(user);
+        if (newUser != null) {
+            System.out.println("这里是Consumer，接收到getUser的返回值"+newUser.getName());
+        } else {
+            System.out.println("user == null");
+        }
+        System.out.println("这里是Consumer，接收到getNumber的返回值"+userService.getNumber());
+
     }
 }
 
