@@ -24,6 +24,10 @@ public class HessianSerializer implements Serializer {
     public <T> T deserialize(byte[] bytes, Class<T> tClass) throws IOException {
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         HessianInput hi = new HessianInput(bis);
-        return (T) hi.readObject(tClass);
+        Object obj = hi.readObject();
+        if (!tClass.isInstance(obj)) {
+            throw new IOException("Deserialized object is not an instance of " + tClass.getName());
+        }
+        return tClass.cast(obj);
     }
 }

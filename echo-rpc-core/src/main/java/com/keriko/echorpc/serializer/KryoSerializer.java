@@ -3,6 +3,7 @@ package com.keriko.echorpc.serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,6 +12,7 @@ import java.io.ByteArrayOutputStream;
  * Kryo 序列化器
  *
  */
+@Slf4j
 public class KryoSerializer implements Serializer {
     /**
      * kryo 线程不安全，使用 ThreadLocal 保证每个线程只有一个 Kryo
@@ -18,7 +20,7 @@ public class KryoSerializer implements Serializer {
     private static final ThreadLocal<Kryo> KRYO_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
         Kryo kryo = new Kryo();
         // 设置动态动态序列化和反序列化类，不提前注册所有类（可能有安全问题）
-        kryo.setRegistrationRequired(false);
+        kryo.setRegistrationRequired(true);
         return kryo;
     });
 
@@ -26,6 +28,7 @@ public class KryoSerializer implements Serializer {
     public <T> byte[] serialize(T obj) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Output output = new Output(byteArrayOutputStream);
+        log.info("getObject:{}", obj);
         KRYO_THREAD_LOCAL.get().writeObject(output, obj);
         output.close();
         return byteArrayOutputStream.toByteArray();

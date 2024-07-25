@@ -1,10 +1,12 @@
 package com.keriko.echorpc.proxy;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.keriko.echorpc.RpcApplication;
 import com.keriko.echorpc.model.RpcRequest;
 import com.keriko.echorpc.model.RpcResponse;
-import com.keriko.echorpc.serializer.JdkSerializer;
 import com.keriko.echorpc.serializer.Serializer;
+import com.keriko.echorpc.serializer.SerializerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
@@ -14,6 +16,7 @@ import java.lang.reflect.Method;
  * 服务代理（JDK 动态代理）
  *
  */
+@Slf4j
 public class ServiceProxy implements InvocationHandler {
 
     /**
@@ -25,7 +28,8 @@ public class ServiceProxy implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         // 指定序列化器
-        Serializer serializer = new JdkSerializer();
+        log.info("Serializer: {}", RpcApplication.getRpcConfig().getSerializer());
+        Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
 
         // 构造请求
         RpcRequest rpcRequest = RpcRequest.builder()

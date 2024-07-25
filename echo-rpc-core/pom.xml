@@ -76,7 +76,32 @@
             <artifactId>snakeyaml</artifactId>
             <version>2.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.13.0</version>
+        </dependency>
+        <!-- Mockito core library -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.12.4</version> <!-- 使用最新的版本或适合你项目的版本 -->
+            <scope>test</scope>
+        </dependency>
+        <!-- Optional: Mockito JUnit Jupiter integration for JUnit 5 -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>3.12.4</version> <!-- 确保与mockito-core版本一致 -->
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
+        <dependency>
+            <groupId>io.etcd</groupId>
+            <artifactId>jetcd-core</artifactId>
+            <version>0.7.7
+            </version>
+        </dependency>
     </dependencies>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
