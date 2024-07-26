@@ -2,18 +2,18 @@ package com.keriko.echorpc.serializer;
 
 import com.caucho.hessian.io.HessianInput;
 import com.caucho.hessian.io.HessianOutput;
+import com.keriko.echorpc.model.RpcResponse;
 import lombok.Data;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
 import static org.junit.Assert.*;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class HessianSerializerTest {
@@ -25,10 +25,11 @@ public class HessianSerializerTest {
     private static final int TEST_INT = 42;
 
     @Data
-    static class TestPerson {
+    static class TestPerson implements Serializable {
         private String name;
         private int age;
     }
+
     @Before
     public void setUp() {
         serializer = new HessianSerializer();
@@ -69,7 +70,7 @@ public class HessianSerializerTest {
     }
 
     @Test
-    public  void setSerializerObjectShouldEqualAndDeserializeObject() {
+    public void serializeAndDeserialize_CustomObject_ShouldReturnEqualObject() {
         try {
             HessianSerializer serializer = new HessianSerializer();
 
@@ -85,10 +86,45 @@ public class HessianSerializerTest {
             // 反序列化
             TestPerson deserializedPerson = serializer.deserialize(serializedData, TestPerson.class);
             System.out.println("Deserialized Person: " + deserializedPerson);
+
+            // 验证反序列化对象是否与原对象相等
+            assertEquals(person.getName(), deserializedPerson.getName());
+            assertEquals(person.getAge(), deserializedPerson.getAge());
         } catch (IOException e) {
             e.printStackTrace();
+            fail("IOException occurred: " + e.getMessage());
         }
     }
 
+    @Test
+    public void serializeAndDeserialize_RpcResponse_ShouldReturnEqualObject() {
+        try {
+            HessianSerializer serializer = new HessianSerializer();
 
+            // 示例对象
+            RpcResponse rpcResponse = new RpcResponse();
+            rpcResponse.setData("testMethod");
+            rpcResponse.setDataType(String.class);
+            rpcResponse.setException(new Exception("IOE"));
+            rpcResponse.setMessage("testMessage");
+
+
+            // 序列化
+            byte[] serializedData = serializer.serialize(rpcResponse);
+            //System.out.println("Serialized Data: " + serializedData);
+
+            // 反序列化
+            RpcResponse deserializedPerson = serializer.deserialize(serializedData, RpcResponse.class);
+            //System.out.println("Deserialized Person: " + deserializedPerson);
+
+            // 验证反序列化对象是否与原对象相等
+            assertEquals(rpcResponse.getData(), deserializedPerson.getData());
+            assertEquals(rpcResponse.getDataType(), deserializedPerson.getDataType());
+            //assertEquals(rpcResponse.getException(), deserializedPerson.getException());
+            assertEquals(rpcResponse.getMessage(), deserializedPerson.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("IOException occurred: " + e.getMessage());
+        }
+    }
 }

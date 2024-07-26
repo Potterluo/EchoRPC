@@ -1,13 +1,17 @@
 package com.keriko.echorpc;
 
+import com.keriko.echorpc.config.RegistryConfig;
 import com.keriko.echorpc.config.RpcConfig;
 import com.keriko.echorpc.constant.RpcConstant;
+import com.keriko.echorpc.registry.Registry;
+import com.keriko.echorpc.registry.RegistryFactory;
 import com.keriko.echorpc.utils.ConfigUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * RPC 框架应用
  * 相当于 holder，存放了项目全局用到的变量。双检锁单例模式实现
+
  */
 @Slf4j
 public class RpcApplication {
@@ -16,12 +20,17 @@ public class RpcApplication {
 
     /**
      * 框架初始化，支持传入自定义配置
-     *
-     * @param newRpcConfig
      */
     public static void init(RpcConfig newRpcConfig) {
         rpcConfig = newRpcConfig;
         log.info("rpc init, config = {}", newRpcConfig.toString());
+        // 注册中心初始化
+        RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
+        Registry registry = RegistryFactory.getInstance(registryConfig.getRegistry());
+        registry.init(registryConfig);
+        log.info("registry init, config = {}", registryConfig);
+        // 创建并注册 Shutdown Hook，JVM 退出时执行操作
+        Runtime.getRuntime().addShutdownHook(new Thread(registry::destroy));
     }
 
     /**
@@ -38,10 +47,9 @@ public class RpcApplication {
         init(newRpcConfig);
     }
 
+
     /**
      * 获取配置
-     *
-     * @return
      */
     public static RpcConfig getRpcConfig() {
         if (rpcConfig == null) {
@@ -54,4 +62,3 @@ public class RpcApplication {
         return rpcConfig;
     }
 }
-

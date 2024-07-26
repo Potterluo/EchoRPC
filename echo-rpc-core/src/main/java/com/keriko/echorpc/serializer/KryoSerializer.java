@@ -3,6 +3,8 @@ package com.keriko.echorpc.serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.keriko.echorpc.model.RpcRequest;
+import com.keriko.echorpc.model.RpcResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
@@ -20,7 +22,9 @@ public class KryoSerializer implements Serializer {
     private static final ThreadLocal<Kryo> KRYO_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
         Kryo kryo = new Kryo();
         // 设置动态动态序列化和反序列化类，不提前注册所有类（可能有安全问题）
-        kryo.setRegistrationRequired(true);
+        kryo.setRegistrationRequired(false);
+        kryo.register(RpcRequest.class);
+        kryo.register(RpcResponse.class);
         return kryo;
     });
 
