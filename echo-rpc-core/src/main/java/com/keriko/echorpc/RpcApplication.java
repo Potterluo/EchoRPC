@@ -30,6 +30,7 @@ public class RpcApplication {
         registry.init(registryConfig);
         log.info("registry init, config = {}", registryConfig);
         // 创建并注册 Shutdown Hook，JVM 退出时执行操作
+        // TODO 会导致消费者下线时带走提供者？
         Runtime.getRuntime().addShutdownHook(new Thread(registry::destroy));
     }
 

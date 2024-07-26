@@ -47,5 +47,15 @@ public interface Registry {
      */
     void destroy();
 
+    /**
+     * 心跳检测，用于保持与注册中心的连接。
+     */
+    void heartBeat();
+
+    /**
+     * 监听（消费端）
+     */
+    void watch(String serviceNodeKey);
+
 }
 

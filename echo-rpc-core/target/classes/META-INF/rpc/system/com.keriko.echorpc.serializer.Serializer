@@ -1,0 +1,4 @@
+jdk=com.keriko.echorpc.serializer.JdkSerializer
+hessian=com.keriko.echorpc.serializer.HessianSerializer
+json=com.keriko.echorpc.serializer.JsonSerializer
+kryo=com.keriko.echorpc.serializer.KryoSerializer
