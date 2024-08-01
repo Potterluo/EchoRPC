@@ -26,3 +26,15 @@ U
 %example-consumer/example-consumer.iml,8\5\854c8aa3aa14c7ffd5140315428bcbb7c41623a6
 Q
 !example-common/example-common.iml,9\1\919843636537ea33b7e9eb790214a0e79765ad3b
+|
+Lecho-rpc-core/src/main/java/com/keriko/echorpc/protocol/ProtocolMessage.java,e\7\e7dd5fdfc76cd302469f20d2ce6fdd75bad86416
+}
+Mecho-rpc-core/src/main/java/com/keriko/echorpc/protocol/ProtocolConstant.java,3\5\355467481f5e1e073bfa06ded86b90f3c179e254
+†
+Vecho-rpc-core/src/main/java/com/keriko/echorpc/protocol/ProtocolMessageStatusEnum.java,7\1\71fea2e8380b24c278f582afe1168875cc46c582
+„
+Techo-rpc-core/src/main/java/com/keriko/echorpc/protocol/ProtocolMeaasgeTyprEnum.java,7\0\7085227f88127f6600aff2e563ca20da16c0e557
+Š
+Zecho-rpc-core/src/main/java/com/keriko/echorpc/protocol/ProtocolMessageSerializerEnum.java,4\4\4431d65a5b333693bdfa2f10e431837af4134aca
+„
+Techo-rpc-core/src/main/java/com/keriko/echorpc/protocol/ProtocolMessageTypeEnum.java,2\9\29da8d40bfac660be48735bfdd74578795062682
