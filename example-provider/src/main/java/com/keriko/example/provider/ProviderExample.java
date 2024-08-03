@@ -1,6 +1,7 @@
 package com.keriko.example.provider;
 
 import cn.hutool.core.net.NetUtil;
+import com.keriko.echorpc.server.tcp.VertxTcpServer;
 import com.keriko.example.common.service.UserService;
 import com.keriko.echorpc.RpcApplication;
 import com.keriko.echorpc.config.RegistryConfig;
@@ -51,7 +52,9 @@ public class ProviderExample {
         }
 
         // 启动 web 服务
-        HttpServer httpServer = new VertxHttpServer();
-        httpServer.doStart(RpcApplication.getRpcConfig().getServerPort());
+//        HttpServer httpServer = new VertxHttpServer();
+//        httpServer.doStart(RpcApplication.getRpcConfig().getServerPort());
+        VertxTcpServer vertxTcpServer = new VertxTcpServer();
+        vertxTcpServer.doStart(8080);
     }
 }
