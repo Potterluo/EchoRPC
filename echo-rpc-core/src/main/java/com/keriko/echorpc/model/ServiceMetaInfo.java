@@ -36,6 +36,11 @@ public class ServiceMetaInfo {
     private String serviceGroup = "default";
 
     /**
+     * 服务权重
+     */
+    private int weight = 0;
+
+    /**
      * 获取服务键名
      */
     public String getServiceKey() {
@@ -50,6 +55,8 @@ public class ServiceMetaInfo {
     public String getServiceNodeKey() {
         return String.format("%s/%s:%s", getServiceKey(), serviceHost, servicePort);
     }
+
+
 
     /**
      * 获取完整服务地址
