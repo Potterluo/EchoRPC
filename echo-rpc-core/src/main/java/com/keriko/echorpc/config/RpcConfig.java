@@ -1,5 +1,7 @@
 package com.keriko.echorpc.config;
 
+import com.keriko.echorpc.fault.retry.RetryStrategyKeys;
+import com.keriko.echorpc.loadbalancer.LoadBalancerKeys;
 import com.keriko.echorpc.serializer.SerializerKeys;
 import lombok.Data;
 
@@ -43,6 +45,16 @@ public class RpcConfig {
      * 注册中心接口
      */
     private RegistryConfig registryConfig = new RegistryConfig();
+
+    /**
+     * 负载均衡器
+     */
+    private String loadBalancer = LoadBalancerKeys.ROUND_ROBIN;
+
+    /**
+     * 重试策略
+     */
+    private String retryStrategy = RetryStrategyKeys.FIXED_INTERVAL;
 
 }
 

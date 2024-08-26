@@ -28,6 +28,7 @@ public class VertxHttpServer implements HttpServer {
                 System.out.println("Server is now listening on port " + port);
             } else {
                 System.err.println("Failed to start server: " + result.cause());
+
             }
         });
     }

@@ -7,6 +7,10 @@ import cn.hutool.http.HttpResponse;
 import com.keriko.echorpc.RpcApplication;
 import com.keriko.echorpc.config.RpcConfig;
 import com.keriko.echorpc.constant.RpcConstant;
+import com.keriko.echorpc.fault.retry.RetryStrategy;
+import com.keriko.echorpc.fault.retry.RetryStrategyFactory;
+import com.keriko.echorpc.loadbalancer.LoadBalancer;
+import com.keriko.echorpc.loadbalancer.LoadBalancerFactory;
 import com.keriko.echorpc.model.RpcRequest;
 import com.keriko.echorpc.model.RpcResponse;
 import com.keriko.echorpc.model.ServiceMetaInfo;
@@ -28,7 +32,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
@@ -43,8 +49,8 @@ public class ServiceProxy implements InvocationHandler {
     /**
      * 调用代理
      *
-     * @return
-     * @throws Throwable
+     * @return 调用结果对象
+     * @throws Throwable 如果调用过程中发生错误，则抛出异常
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -67,37 +73,30 @@ public class ServiceProxy implements InvocationHandler {
             serviceMetaInfo.setServiceName(serviceName);
             serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
             List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
+            log.info("服务发现: {}", serviceMetaInfoList);
             if (CollUtil.isEmpty(serviceMetaInfoList)) {
+                log.error("暂无服务地址");
                 throw new RuntimeException("暂无服务地址");
             }
-            ServiceMetaInfo selectedServiceMetaInfo = serviceMetaInfoList.get(0);
-            log.info("调用服务：{}", selectedServiceMetaInfo.getServiceAddress());
-            // 发送 TCP 请求
-            RpcResponse rpcResponse = VertxTcpClient.doRequest(rpcRequest, selectedServiceMetaInfo);
+
+            // 负载均衡
+            LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(rpcConfig.getLoadBalancer());
+            // 将调用方法名（请求路径）作为负载均衡参数
+            Map<String, Object> requestParams = new HashMap<>();
+            requestParams.put("methodName", rpcRequest.getMethodName());
+            ServiceMetaInfo selectedServiceMetaInfo = loadBalancer.select(requestParams, serviceMetaInfoList);
+
+            // rpc 请求
+            // 使用重试机制
+            log.info("开始调用服务: {}", selectedServiceMetaInfo);
+            RetryStrategy retryStrategy = RetryStrategyFactory.getInstance(rpcConfig.getRetryStrategy());
+            RpcResponse rpcResponse = retryStrategy.doRetry(() ->
+                    VertxTcpClient.doRequest(rpcRequest, selectedServiceMetaInfo)
+            );
             return rpcResponse.getData();
         } catch (Exception e) {
-            throw new RuntimeException("调用失败");
+            return null;
         }
     }
 
-    /**
-     * 发送 HTTP 请求
-     *
-     * @param selectedServiceMetaInfo
-     * @param bodyBytes
-     * @return
-     * @throws IOException
-     */
-    private static RpcResponse doHttpRequest(ServiceMetaInfo selectedServiceMetaInfo, byte[] bodyBytes) throws IOException {
-        final Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
-        // 发送 HTTP 请求
-        try (HttpResponse httpResponse = HttpRequest.post(selectedServiceMetaInfo.getServiceAddress())
-                .body(bodyBytes)
-                .execute()) {
-            byte[] result = httpResponse.bodyBytes();
-            // 反序列化
-            RpcResponse rpcResponse = serializer.deserialize(result, RpcResponse.class);
-            return rpcResponse;
-        }
-    }
 }
