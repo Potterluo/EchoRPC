@@ -1,0 +1,5 @@
+roundRobin=com.keriko.echorpc.loadbalancer.RoundRobinLoadBalancer
+random=com.keriko.echorpc.loadbalancer.RandomLoadBalancer
+weightedRoundRobin=com.keriko.echorpc.loadbalancer.WeightedRoundRobinLoadBalancer
+weightedRandom=com.keriko.echorpc.loadbalancer.WeightedRandomLoadBalancer
+consistentHash=com.keriko.echorpc.loadbalancer.ConsistentHashLoadBalancer

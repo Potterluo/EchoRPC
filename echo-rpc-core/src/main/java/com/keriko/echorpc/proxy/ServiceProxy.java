@@ -9,6 +9,8 @@ import com.keriko.echorpc.config.RpcConfig;
 import com.keriko.echorpc.constant.RpcConstant;
 import com.keriko.echorpc.fault.retry.RetryStrategy;
 import com.keriko.echorpc.fault.retry.RetryStrategyFactory;
+import com.keriko.echorpc.fault.tolerant.TolerantStrategy;
+import com.keriko.echorpc.fault.tolerant.TolerantStrategyFactory;
 import com.keriko.echorpc.loadbalancer.LoadBalancer;
 import com.keriko.echorpc.loadbalancer.LoadBalancerFactory;
 import com.keriko.echorpc.model.RpcRequest;
@@ -40,23 +42,17 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * 服务代理（JDK 动态代理）
- *
  */
 public class ServiceProxy implements InvocationHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(ServiceProxy.class);
 
     /**
      * 调用代理
      *
-     * @return 调用结果对象
-     * @throws Throwable 如果调用过程中发生错误，则抛出异常
+     * @return 调用远程服务返回的对象
+     * @throws Throwable 抛出的异常，包含调用过程中遇到的错误
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // 指定序列化器
-        final Serializer serializer = SerializerFactory.getInstance(RpcApplication.getRpcConfig().getSerializer());
-
         // 构造请求
         String serviceName = method.getDeclaringClass().getName();
         RpcRequest rpcRequest = RpcRequest.builder()
@@ -65,38 +61,38 @@ public class ServiceProxy implements InvocationHandler {
                 .parameterTypes(method.getParameterTypes())
                 .args(args)
                 .build();
+
+        // 从注册中心获取服务提供者请求地址
+        RpcConfig rpcConfig = RpcApplication.getRpcConfig();
+        Registry registry = RegistryFactory.getInstance(rpcConfig.getRegistryConfig().getRegistry());
+        ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
+        serviceMetaInfo.setServiceName(serviceName);
+        serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
+        List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
+        if (CollUtil.isEmpty(serviceMetaInfoList)) {
+            throw new RuntimeException("暂无服务地址");
+        }
+
+        // 负载均衡
+        LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(rpcConfig.getLoadBalancer());
+        // 将调用方法名（请求路径）作为负载均衡参数
+        Map<String, Object> requestParams = new HashMap<>();
+        requestParams.put("methodName", rpcRequest.getMethodName());
+        ServiceMetaInfo selectedServiceMetaInfo = loadBalancer.select(requestParams, serviceMetaInfoList);
+        // rpc 请求
+        // 使用重试机制
+        RpcResponse rpcResponse;
         try {
-            // 从注册中心获取服务提供者请求地址
-            RpcConfig rpcConfig = RpcApplication.getRpcConfig();
-            Registry registry = RegistryFactory.getInstance(rpcConfig.getRegistryConfig().getRegistry());
-            ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
-            serviceMetaInfo.setServiceName(serviceName);
-            serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
-            List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
-            log.info("服务发现: {}", serviceMetaInfoList);
-            if (CollUtil.isEmpty(serviceMetaInfoList)) {
-                log.error("暂无服务地址");
-                throw new RuntimeException("暂无服务地址");
-            }
-
-            // 负载均衡
-            LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(rpcConfig.getLoadBalancer());
-            // 将调用方法名（请求路径）作为负载均衡参数
-            Map<String, Object> requestParams = new HashMap<>();
-            requestParams.put("methodName", rpcRequest.getMethodName());
-            ServiceMetaInfo selectedServiceMetaInfo = loadBalancer.select(requestParams, serviceMetaInfoList);
-
-            // rpc 请求
-            // 使用重试机制
-            log.info("开始调用服务: {}", selectedServiceMetaInfo);
             RetryStrategy retryStrategy = RetryStrategyFactory.getInstance(rpcConfig.getRetryStrategy());
-            RpcResponse rpcResponse = retryStrategy.doRetry(() ->
+            rpcResponse = retryStrategy.doRetry(() ->
                     VertxTcpClient.doRequest(rpcRequest, selectedServiceMetaInfo)
             );
-            return rpcResponse.getData();
         } catch (Exception e) {
-            return null;
+            // 容错机制
+            TolerantStrategy tolerantStrategy = TolerantStrategyFactory.getInstance(rpcConfig.getTolerantStrategy());
+            rpcResponse = tolerantStrategy.doTolerant(null, e);
         }
+        return rpcResponse.getData();
     }
 
 }

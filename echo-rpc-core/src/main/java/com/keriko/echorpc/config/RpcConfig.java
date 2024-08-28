@@ -1,6 +1,7 @@
 package com.keriko.echorpc.config;
 
 import com.keriko.echorpc.fault.retry.RetryStrategyKeys;
+import com.keriko.echorpc.fault.tolerant.TolerantStrategyKeys;
 import com.keriko.echorpc.loadbalancer.LoadBalancerKeys;
 import com.keriko.echorpc.serializer.SerializerKeys;
 import lombok.Data;
@@ -55,6 +56,11 @@ public class RpcConfig {
      * 重试策略
      */
     private String retryStrategy = RetryStrategyKeys.FIXED_INTERVAL;
+
+    /**
+     * 容错策略
+     */
+    private String tolerantStrategy = TolerantStrategyKeys.FAIL_FAST;
 
 }
 

@@ -1,0 +1,4 @@
+failBack=com.keriko.echorpc.fault.tolerant.FailBackTolerantStrategy
+failFast=com.keriko.echorpc.fault.tolerant.FailFastTolerantStrategy
+failOver=com.keriko.echorpc.fault.tolerant.FailOverTolerantStrategy
+failSafe=com.keriko.echorpc.fault.tolerant.FailSafeTolerantStrategy

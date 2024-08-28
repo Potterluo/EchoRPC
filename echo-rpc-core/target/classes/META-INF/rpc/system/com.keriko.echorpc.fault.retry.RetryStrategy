@@ -1,0 +1,4 @@
+no=com.keriko.echorpc.fault.retry.NoRetryStrategy
+fixedInterval=com.keriko.echorpc.fault.retry.FixedIntervalRetryStrategy
+randomInterval=com.keriko.echorpc.fault.retry.RandomIntervalRetryStrategy
+exponentialBackoff=com.keriko.echorpc.fault.retry.ExponentialBackoffRetryStrategy
