@@ -15,11 +15,11 @@
         <module name="echo-spring-boot-starter" />
         <module name="echo-rpc-core" />
         <module name="example-consumer" />
+        <module name="echo-rpc-spring-boot-starter" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="echo-rpc-easy (1)" target="17" />
-      <module name="echo-rpc-spring-boot-starter" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -1,0 +1,4 @@
+
+f	java:S128^"LEnd this switch case with an unconditional break, return or throw statement.(úâúÿÿÿÿ
+f	java:S128\"LEnd this switch case with an unconditional break, return or throw statement.(‰ÆÄÎşÿÿÿÿ
+E	java:S106w"+Replace this use of System.out by a logger.(ïç°…ûÿÿÿÿ

@@ -7,14 +7,14 @@
 - [ ] 配置加载兼容yaml 
 - [x] 接口Mock
 - [x] 自定义序列化器
-- [ ] hessian，json， kryo等序列化器实现
+- [x] hessian，json， kryo等序列化器实现
 - [x] 注册中心实现
 - [x] 注册中心优化（心跳）
 - [x] 自定义协议实现（基于TCP）
-- [ ] 协议优化（比特位实现），自定义序列化器枚举值获取
-- [ ] 负载均衡机制
-- [ ] 重试机制
-- [ ] 容错机制
+- [x] 协议优化（比特位实现），自定义序列化器枚举值获取
+- [x] 负载均衡机制
+- [x] 重试机制
+- [x] 容错机制
 
 # 1 概述
 
@@ -598,7 +598,43 @@ TCP是面向字节流的协议，并不关系应用层的协议类型。可能�
 
 ## 3.6 负载均衡
 
+1）**轮询**（Round Robin）：按照循环的顺序将请求分配给每个服务器，适用于各服务器性能相近的情况。
 
+2）**随机**（Random）：随机选择一个服务器来处理请求，适用于服务器性能相近且负载均匀的情况。
+
+3）**加权轮询**（Weighted Round Robin）：根据服务器的性能或权重分配请求，性能更好的服务器会获得更多的请求，适用于服务器性能不均的情况。
+
+加权随机（Weighted Random）：根据服务器的权重随机选择一个服务器处理请求，适用于服务器性能不均的情况。
+
+4）**加权随机**（Weighted Random）：根据服务器的权重随机选择一个服务器处理请求，适用于服务器性能不均的情况。
+
+5）**最小连接数**（Least Connections）：选择当前连接数最少的服务器来处理请求，适用于长连接场景。
+
+6）**IP Hash**：根据客户端 IP 地址的哈希值选择服务器处理请求，确保同一客户端的请求始终被分配到同一台服务器上，适用于需要保持会话一致性的场景。
+
+### 一致性哈希
+
+一致性哈希算法（Consistent Hashing）是一种特殊的哈希算法，主要用于解决分布式系统中数据的分布和负载均衡问题，以下是它的主要特点和原理：
+
+**基本原理**
+
+- 哈希环
+  - 一致性哈希算法将整个哈希值空间组织成一个虚拟的圆环，通常这个圆环的范围是 0 到 2 的 32 次方 - 1。
+- 节点映射
+  - 把各个存储节点（如服务器节点）通过哈希函数映射到这个哈希环上的不同位置。
+- 数据映射
+  - 当要存储或查找一个数据时，对数据的关键字进行哈希计算，得到其在哈希环上的位置，然后按顺时针方向在哈希环上查找离该位置最近的存储节点，这个节点就是数据应该存储或读取的位置。
+
+### MurmurHash3
+
+- MurmurHash3 是一种非常高效的非加密型哈希函数。它可以快速地将输入数据转换为一个哈希值。
+
+**主要特点**
+
+- 计算速度快
+  - 它被设计为在计算哈希值时能够快速执行。无论是处理小规模数据还是大规模数据，都能在很短的时间内得出哈希结果，这使得它在对性能要求较高的场景下非常有优势，例如在哈希表的实现中，能够快速地对键进行哈希计算，减少插入和查找操作的时间。
+- 低碰撞率
+  - 虽然不是加密级别的哈希函数，但 MurmurHash3 具有相对较低的碰撞概率。这意味着不同的输入数据产生相同哈希值的可能性较小。在数据量大且对数据唯一性要求较高的场景下，能保证数据的准确区分。例如在分布式系统中，用于将数据均匀地分配到不同的节点上时，可以减少数据冲突的情况。
 
 ## 3.7 重试机制
 
@@ -620,6 +656,48 @@ TCP是面向字节流的协议，并不关系应用层的协议类型。可能�
 
 
 
+**重试条件** 
+
+希望提高系统的可用性，当由于网络等异常情况发生时，触发重试。
+
+**重试时间算法**
+
+1）固定重试间隔（Fixed Retry Interval）：在每次重试之间使用固定的时间间隔。
+
+2）指数退避重试（Exponential Backoff Retry）：在每次失败后，重试的时间间隔会以指数级增加，以避免请求过于密集。
+
+比如近 5 次重试的时间点如下：
+
+1s 3s（多等 2s） 7s（多等 4s） 15s（多等 8s） 31s（多等 16s）
+
+3）随机延迟重试（Random Delay Retry）：在每次重试之间使用随机的时间间隔，以避免请求的同时发生。
+
+4）可变延迟重试（Variable Delay Retry）：这种策略更 “高级” 了，根据先前重试的成功或失败情况，动态调整下一次重试的延迟时间。比如，根据前一次的响应时间调整下一次重试的等待时间。
+
+值得一提的是，以上的策略是可以组合使用的，一定要根据具体情况和需求灵活调整。比如可以先使用指数退避重试策略，如果连续多次重试失败，则切换到固定重试间隔策略。
+
+停止重试
+
+一般来说，重试次数是有上限的，否则随着报错的增多，系统同时发生的重试也会越来越多，造成雪崩。
+
+主流的停止重试策略有：
+
+1）最大尝试次数：一般重试当达到最大次数时不再重试。
+
+2）超时停止：重试达到最大时间的时候，停止重试。
+
+重试工作
+
+最后一点是重试后要做什么事情？一般来说就是重复执行原本要做的操作，比如发送请求失败了，那就再发一次请求。
+
+需要注意的是，当重试次数超过上限时，往往还要进行其他的操作，比如：
+
+1）通知告警：让开发者人工介入
+
+2）降级容错：改为调用其他接口、或者执行其他操作
+
+
+
 ## 3.8 容错机制
 
 当系统出现错误时，不应当直接崩溃，可以采取系列降级保护措施。
@@ -635,3 +713,85 @@ TCP是面向字节流的协议，并不关系应用层的协议类型。可能�
   - 降级:系统出现错误后，改为执行其他更稳定可用的操作，也可以叫做“兜底"或“有损服务”，这种方式的本质是:即使牺姓一定的服务质量，也要保证系统的部分功能可用，保证基本的功能需求得到满足。
   - 熔断:系统出现故障或异常时，暂时中断对该服务的请求，而是执行其他操作，以避免连锁故障
   - 超时控制:如果请求或操作长时间没处理完成，就进行中断，防止阻塞和资源占用。
+
+## 3.9 启动机制和注解扫描
+
+实现注解
+
+1. 主动扫描：让开发者指定要扫描的路径，然后遍历所有的类文件，针对有注解的类文件，执行自定义的操作。
+2. 监听 Bean 加载：在 Spring 项目中，可以通过实现 BeanPostProcessor 接口，在 Bean 初始化后执行自定义的操作。
+
+遵循最小可用化原则，我们只需要定义 3 个注解
+
+1）@EnableRpc：用于全局标识项目需要引入 RPC 框架、执行初始化方法。
+
+由于服务消费者和服务提供者初始化的模块不同，我们需要在 EnableRpc 注解中，指定是否需要启动服务器等属性。
+
+2）@RpcService：服务提供者注解，在需要注册和提供的服务类上使用。
+
+RpcService 注解中，需要指定服务注册信息属性，比如服务接口实现类、版本号等（也可以包括服务名称）。
+
+3）@RpcReference：服务消费者注解，在需要注入服务代理对象的属性上使用，类似 Spring 中的 @Resource 注解。
+
+### Spring Boot Starter具体实现
+
+**1. 定义配置属性类**
+
+- 创建一个类，使用`@ConfigurationProperties`注解来绑定配置文件中的属性。例如：
+
+```java
+@ConfigurationProperties(prefix = "yourprefix")
+public class YourProperties {
+    // 定义属性及其对应的 getters 和 setters
+}
+```
+
+**2. 创建自动配置类**
+
+- 编写一个配置类，使用`@Configuration`注解标记。
+- 在这个类中，可以使用`@Bean`注解定义需要被 Spring 管理的 bean。
+- 可以通过构造函数或者`@Autowired`注入配置属性类，根据属性值进行 bean 的配置。
+
+```java
+@Configuration
+@ConditionalOnClass(YourService.class)
+@EnableConfigurationProperties(YourProperties.class)
+public class YourAutoConfiguration {
+
+    private final YourProperties yourProperties;
+
+    public YourAutoConfiguration(YourProperties yourProperties) {
+        this.yourProperties = yourProperties;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public YourService yourService() {
+        return new YourService(yourProperties);
+    }
+}
+```
+
+**3. 注册自动配置类**
+
+- 在`resources/META - INF`目录下创建`spring.factories`文件。
+- 在文件中添加自动配置类的全路径，例如：`org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.example.YourAutoConfiguration`。
+
+**4. 构建和使用**
+
+- 将项目构建成一个 jar 包。
+- 在其他 Spring Boot 项目中，引入这个 jar 包，然后在配置文件中按照定义的`prefix`配置相关属性，Spring Boot 就会自动加载这个 starter 中的配置和 bean。
+
+### 自定义注解
+
+1）只需要让启动类实现 `BeanPostProcessor `接口的 `postProcessAfterInitialization `方法，就可以在某个服务提供者 Bean 初始化后，执行注册服务等操作了。
+
+1）@Import({RpcInitBootstrap.class, RpcProviderBootstrap.class, RpcConsumerBootstrap.class})
+
+在 Spring 框架中，**@ Import** 注解用于导入其他配置类或组件到当前的 Spring 配置中。通过这种方式，可以组织和管理配置，使得 Spring 应用的配置更加模块化。当你在配置类或启动类上使用 **@Import**注解时，它告诉 Spring 容器在启动时加载并注册指定的类作为配置类。
+
+这段代码**@Import({RpcInitBootstrap.class, RpcProviderBootstrap.class, RpcConsumerBootstrap.class})**的作用是在Spring容器启动时，将**RpcInitBootstrap**、**RpcProviderBootstrap**和**RpcConsumerBootstrap**这三个类导入到Spring的上下文中。这三个类可能包含了一些重要的配置信息、Bean定义或者其他初始化逻辑，它们对于RPC（Remote Procedure Call，远程过程调用）框架的初始化和运行至关重要。
+
+2）RpcConsumerBootstrap 的作用
+
+这段代码的作用是在 Spring 容器的 Bean 初始化后阶段，为那些需要消费 RPC 服务的 Bean 字段自动注入 RPC 服务的代理对象。这样做可以让服务消费者通过简单地声明一个带有 **@RpcReference** 注解的字段，自动获得RPC服务的客户端代理，进而调用远程服务。这是实现 RPC 框架在 Spring 环境中自动依赖注入的一种方式，大大简化了 RPC 服务消费者的代码。
